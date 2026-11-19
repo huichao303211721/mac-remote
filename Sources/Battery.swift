@@ -89,7 +89,6 @@ final class BatteryMonitor: NSObject, CBCentralManagerDelegate, CBPeripheralDele
 
     private func finish(_ value: Int?) {
         if let l = value {
-            if let old = level, l > old { isCharging = true }
             level = l
             retries = 0
         }
@@ -118,8 +117,9 @@ final class BatteryMonitor: NSObject, CBCentralManagerDelegate, CBPeripheralDele
         let charge = (Int(raw) >> 6) & 0x3
         Log.line(String(format: "battery: power state=0x%02X present=%d wired=%d wireless=%d charge=%d",
                         Int(raw), present, wired, wireless, charge))
-        // 以充电状态位与有线供电位为准（无线供电位在本机常报 connected，不可用）
-        return charge == 1 || wired == 2
+        // 只用「有线外接电源」位判定：本机实测拔线后 charge 位仍为 1（滞后/错误），
+        // 而 wired 位立刻由 2(已接电源) 变 3(未接)，是唯一可靠的信号。
+        return wired == 2
     }
 
     // MARK: - CBCentralManagerDelegate
@@ -185,6 +185,7 @@ final class BatteryMonitor: NSObject, CBCentralManagerDelegate, CBPeripheralDele
             if let d = ch.value, let first = d.first, error == nil {
                 isCharging = decodePowerState(first)
             } else {
+                // 读不到供电位时按未充电处理，避免残留上一次的充电标识
                 isCharging = false
                 Log.line("battery: power state unavailable")
             }
