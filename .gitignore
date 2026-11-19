@@ -1,0 +1,17 @@
+# 构建产物
+build/
+*.app
+*.dSYM/
+
+# Apple 版权 3D 模型，不随仓库分发
+Resources/SiriRemote.usdz
+
+# Xcode / 本地个人配置
+xcuserdata/
+.DS_Store
+*.p12
+*.key
+*.cer
+
+# 日志
+*.log
