@@ -17,6 +17,8 @@ final class BatteryMonitor: NSObject, CBCentralManagerDelegate, CBPeripheralDele
     }
     private(set) var level: Int?
     private(set) var isCharging = false
+    /// 最近一次成功读数的时间
+    private(set) var lastRead: Date?
 
     private var central: CBCentralManager?
     private var target: CBPeripheral?
@@ -96,6 +98,7 @@ final class BatteryMonitor: NSObject, CBCentralManagerDelegate, CBPeripheralDele
     private func finish(_ value: Int?) {
         if let l = value {
             level = l
+            lastRead = Date()
             retries = 0
         }
         let p = target

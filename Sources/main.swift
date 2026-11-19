@@ -14,9 +14,10 @@ enum LaunchAtLogin {
     }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     var windowController: MainWindowController?
     var statusItem: NSStatusItem?
+    private var batteryItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(Store.shared.config.showDockIcon ? .regular : .accessory)
@@ -45,6 +46,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.title = "Mac 遥控"
         let menu = NSMenu()
+        menu.delegate = self
+        let b = NSMenuItem(title: "电量：读取中…", action: nil, keyEquivalent: "")
+        b.isEnabled = false
+        menu.addItem(b)
+        batteryItem = b
+        menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "打开主界面", action: #selector(openMain), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "停止控制 / 启动控制", action: #selector(toggleControl), keyEquivalent: ""))
         menu.addItem(.separator())
@@ -55,14 +62,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updateStatusTitle()
     }
 
-    /// 菜单栏标题：控制状态 + 连接标记 + 电量（充电时带闪电）
+    /// 菜单栏标题：控制状态 + 连接标记 + 电量（充电时带闪电，低电量转橙）
     private func updateStatusTitle() {
         var t = Store.shared.config.controlEnabled ? "Mac 遥控" : "Mac 遥控（已停止）"
         if RemoteHID.shared.connected { t += " ●" }
-        if let lvl = BatteryMonitor.shared.level {
-            t += BatteryMonitor.shared.isCharging ? " ⚡\(lvl)%" : " \(lvl)%"
+
+        var color = NSColor.labelColor
+        let battery = BatteryMonitor.shared
+        if let lvl = battery.level {
+            if battery.isCharging {
+                t += " ⚡\(lvl)%"
+                color = .systemGreen
+            } else {
+                t += " \(lvl)%"
+                if lvl <= 20 { color = .systemOrange }
+            }
         }
-        statusItem?.button?.title = t
+
+        let attrs: [NSAttributedString.Key: Any] = [
+            .foregroundColor: color,
+            .font: NSFont.menuBarFont(ofSize: 0)
+        ]
+        statusItem?.button?.attributedTitle = NSAttributedString(string: t, attributes: attrs)
+    }
+
+    /// 菜单展开时刷新电量详情
+    func menuWillOpen(_ menu: NSMenu) {
+        let battery = BatteryMonitor.shared
+        guard let lvl = battery.level else {
+            batteryItem?.title = "电量：暂未读取到"
+            return
+        }
+        var text = "电量：\(lvl)%"
+        if battery.isCharging { text += "（充电中 ⚡）" }
+        if let d = battery.lastRead {
+            let sec = Int(Date().timeIntervalSince(d))
+            let ago = sec < 60 ? "\(sec) 秒前" : (sec < 3600 ? "\(sec / 60) 分钟前" : "\(sec / 3600) 小时前")
+            text += " · 更新于 \(ago)"
+        }
+        batteryItem?.title = text
     }
 
     @objc private func openMain() {
