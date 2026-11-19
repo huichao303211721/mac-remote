@@ -52,6 +52,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for m in menu.items { m.target = self }
         item.menu = menu
         statusItem = item
+        updateStatusTitle()
+    }
+
+    /// 菜单栏标题：控制状态 + 连接标记 + 电量（充电时带闪电）
+    private func updateStatusTitle() {
+        var t = Store.shared.config.controlEnabled ? "Mac 遥控" : "Mac 遥控（已停止）"
+        if RemoteHID.shared.connected { t += " ●" }
+        if let lvl = BatteryMonitor.shared.level {
+            t += BatteryMonitor.shared.isCharging ? " ⚡\(lvl)%" : " \(lvl)%"
+        }
+        statusItem?.button?.title = t
     }
 
     @objc private func openMain() {
@@ -62,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func toggleControl() {
         Store.shared.config.controlEnabled.toggle()
         Store.shared.save()
-        statusItem?.button?.title = Store.shared.config.controlEnabled ? "Mac 遥控" : "Mac 遥控（已停止）"
+        updateStatusTitle()
     }
 
     @objc private func quit() { NSApp.terminate(nil) }
@@ -78,8 +89,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         BatteryMonitor.shared.start()
 
         NotificationCenter.default.addObserver(forName: .remoteStateChanged, object: nil, queue: .main) { _ in
-            self.statusItem?.button?.title = RemoteHID.shared.connected ? "Mac 遥控 ●" : "Mac 遥控"
+            self.updateStatusTitle()
         }
+        BatteryMonitor.shared.observe { [weak self] _, _ in
+            DispatchQueue.main.async { self?.updateStatusTitle() }
+        }
+        updateStatusTitle()
     }
 }
 

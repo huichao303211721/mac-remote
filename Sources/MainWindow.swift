@@ -78,7 +78,7 @@ final class MappingSection: NSView {
         batteryLabel.font = .systemFont(ofSize: 12, weight: .medium)
         batteryBox.addSubview(batteryLabel)
 
-        BatteryMonitor.shared.onChange = { [weak self] lvl, charging in
+        BatteryMonitor.shared.observe { [weak self] lvl, charging in
             DispatchQueue.main.async { self?.updateBattery(lvl, charging: charging) }
         }
         updateBattery(BatteryMonitor.shared.level, charging: BatteryMonitor.shared.isCharging)
@@ -243,72 +243,83 @@ final class DeviceSection: NSView {
         title.frame = NSRect(x: 24, y: frame.height - 56, width: 200, height: 22)
         addSubview(title)
 
-        var y = frame.height - 120
+        var y = frame.height - 118
         let x: CGFloat = 24, w = frame.width - 48
 
         // 权限
         let perm = card("权限", "需要“辅助功能”和“输入监控”，Voxa 有的我们也一样")
-        perm.frame = NSRect(x: x, y: y - 100, width: w, height: 100)
+        perm.frame = NSRect(x: x, y: y - 92, width: w, height: 92)
         let axLabel = label("辅助功能：检测中…")
-        axLabel.frame = NSRect(x: 18, y: 44, width: 420, height: 18)
+        axLabel.frame = NSRect(x: 18, y: 56, width: 420, height: 18)
         perm.addSubview(axLabel)
         statusLabels["ax"] = axLabel
         let axBtn = NSButton(title: "去授权", target: self, action: #selector(openAX))
         axBtn.bezelStyle = .rounded
-        axBtn.frame = NSRect(x: perm.bounds.width - 110, y: 40, width: 90, height: 28)
+        axBtn.frame = NSRect(x: perm.bounds.width - 110, y: 52, width: 90, height: 28)
         axBtn.autoresizingMask = [.minXMargin]
         perm.addSubview(axBtn)
         let imLabel = label("输入监控：检测遥控器连接状态")
-        imLabel.frame = NSRect(x: 18, y: 18, width: 420, height: 18)
+        imLabel.frame = NSRect(x: 18, y: 28, width: 420, height: 18)
         perm.addSubview(imLabel)
         statusLabels["im"] = imLabel
         addSubview(perm)
-        y -= 116
+        y -= 106
 
         // 遥控器
         let remoteCard = card("遥控器", "Siri Remote（A2854，VID 0x004C / PID 0x0315）")
-        remoteCard.frame = NSRect(x: x, y: y - 88, width: w, height: 88)
+        remoteCard.frame = NSRect(x: x, y: y - 152, width: w, height: 152)
         let rs = label("连接状态：检测中…", size: 12, color: .white)
-        rs.frame = NSRect(x: 18, y: 32, width: 420, height: 18)
+        rs.frame = NSRect(x: 18, y: 84, width: 260, height: 18)
         remoteCard.addSubview(rs)
         statusLabels["remote"] = rs
+
+        let modelHint = label("官方 3D 模型 · 可拖动旋转", size: 11, color: NSColor(calibratedWhite: 0.55, alpha: 1))
+        modelHint.frame = NSRect(x: 18, y: 62, width: 260, height: 16)
+        remoteCard.addSubview(modelHint)
+
+        let preview = RemoteShapeView(frame: NSRect(x: w - 132, y: 8, width: 118, height: 136))
+        preview.autoresizingMask = [.minXMargin]
+        preview.wantsLayer = true
+        preview.layer?.cornerRadius = 10
+        preview.layer?.masksToBounds = true
+        remoteCard.addSubview(preview)
         addSubview(remoteCard)
-        y -= 104
+        y -= 166
 
         // 触控板
         let padCard = card("触控板", "手指在圆形触控区移动 = 移动指针")
-        padCard.frame = NSRect(x: x, y: y - 130, width: w, height: 130)
+        padCard.frame = NSRect(x: x, y: y - 120, width: w, height: 120)
         let padToggle = NSButton(checkboxWithTitle: "启用触控板", target: self, action: #selector(padToggled(_:)))
         padToggle.state = Store.shared.config.pad.enabled ? .on : .off
-        padToggle.frame = NSRect(x: 18, y: 74, width: 160, height: 20)
+        padToggle.frame = NSRect(x: 18, y: 66, width: 160, height: 20)
         padCard.addSubview(padToggle)
 
         let tapToggle = NSButton(checkboxWithTitle: "轻点 = 鼠标左键", target: self, action: #selector(tapToggled(_:)))
         tapToggle.state = Store.shared.config.pad.tapToClick ? .on : .off
-        tapToggle.frame = NSRect(x: 18, y: 48, width: 200, height: 20)
+        tapToggle.frame = NSRect(x: 18, y: 42, width: 200, height: 20)
         padCard.addSubview(tapToggle)
 
         let scrollToggle = NSButton(checkboxWithTitle: "双指滑动 = 滚动", target: self, action: #selector(scrollToggled(_:)))
         scrollToggle.state = Store.shared.config.pad.twoFingerScroll ? .on : .off
-        scrollToggle.frame = NSRect(x: 18, y: 22, width: 200, height: 20)
+        scrollToggle.frame = NSRect(x: 18, y: 18, width: 200, height: 20)
         padCard.addSubview(scrollToggle)
 
         let spd = label("指针速度", size: 12)
-        spd.frame = NSRect(x: 260, y: 74, width: 80, height: 18)
+        spd.frame = NSRect(x: 260, y: 66, width: 80, height: 18)
         padCard.addSubview(spd)
         let slider = NSSlider(value: Store.shared.config.pad.pointerSpeed, minValue: 0.3, maxValue: 3,
                               target: self, action: #selector(speedChanged(_:)))
-        slider.frame = NSRect(x: 330, y: 74, width: 200, height: 20)
+        slider.frame = NSRect(x: 330, y: 66, width: 200, height: 20)
         padCard.addSubview(slider)
         addSubview(padCard)
-        y -= 146
+        y -= 132
 
         // 通用
         let gen = card("通用")
-        gen.frame = NSRect(x: x, y: y - 70, width: w, height: 70)
+        gen.frame = NSRect(x: x, y: y - 64, width: w, height: 64)
         let login = NSButton(checkboxWithTitle: "开机时自动启动", target: self, action: #selector(loginToggled(_:)))
         login.state = Store.shared.config.launchAtLogin ? .on : .off
-        login.frame = NSRect(x: 18, y: 28, width: 200, height: 20)
+        login.frame = NSRect(x: 18, y: 24, width: 200, height: 20)
         gen.addSubview(login)
         addSubview(gen)
 

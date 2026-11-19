@@ -7,8 +7,14 @@ import CoreBluetooth
 final class BatteryMonitor: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
     static let shared = BatteryMonitor()
 
-    /// 电量 + 是否充电，nil 表示暂时读不到
+    /// 电量 + 是否充电，nil 表示暂时读不到（单槽回调，保留兼容）
     var onChange: ((Int?, Bool) -> Void)?
+    private var observers: [((Int?, Bool) -> Void)] = []
+
+    /// 订阅电量变化，可多路订阅（映射页 UI、菜单栏状态项）
+    func observe(_ block: @escaping (Int?, Bool) -> Void) {
+        observers.append(block)
+    }
     private(set) var level: Int?
     private(set) var isCharging = false
 
@@ -102,7 +108,9 @@ final class BatteryMonitor: NSObject, CBCentralManagerDelegate, CBPeripheralDele
             c.cancelPeripheralConnection(p)
         }
         let charging = isCharging
-        onChange?(value ?? level, charging)
+        let shown = value ?? level
+        onChange?(shown, charging)
+        for o in observers { o(shown, charging) }
         let cbs = waiters
         waiters.removeAll()
         for cb in cbs { cb(value ?? level, charging) }
