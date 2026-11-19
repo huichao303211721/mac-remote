@@ -8,6 +8,20 @@
 
 ---
 
+## 下载（免编译）
+
+到 [Releases](https://github.com/huichao303211721/mac-remote/releases/latest) 下载 `Mac-Remote-1.0.0.zip`，解压后：
+
+1. 双击 **首次打开.command**（自动解除下载隔离并启动 App）；
+2. 若系统拦截脚本，也可以右键 `Mac 遥控.app` →「打开」，或在终端执行：
+   ```bash
+   xattr -dr com.apple.quarantine "Mac 遥控.app"
+   ```
+3. 打开后到「系统设置 → 隐私与安全性 → 辅助功能」勾选 **Mac 遥控**。
+
+> 发布包是 ad-hoc 签名、**未做 Apple 公证**（公证需付费开发者账号），因此首次打开会有安全提示，属正常现象。
+> 发布包**不含**官方 3D 模型，界面为自绘简化款；想要官方外观请自行编译并把 `SiriRemote.usdz` 放进 `Resources/`。
+
 ## 功能
 
 | 区域 | 默认行为 | 可改 |
